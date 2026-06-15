@@ -7,7 +7,7 @@ from prompt_toolkit.layout import AnyContainer, BufferControl
 from prompt_toolkit.layout.containers import HSplit, VSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.styles import Style
-from prompt_toolkit.widgets import Box, Frame
+from prompt_toolkit.widgets import Box, Frame, Label, TextArea
 from prompt_toolkit.filters import Condition
 from src.models import Job
 from src.state import State, View
@@ -72,10 +72,22 @@ class MainView():
 
 class NewJobView():
     def __init__(self, state) -> None:
-        self.buffer1 = Buffer()
-        self.buffer2 = Buffer()
-        self.container = VSplit([
-            Window(content=BufferControl(buffer=self.buffer1)),
-            Window(width=1, char='|'),
-            Window(content=BufferControl(buffer=self.buffer2)),
-        ])
+        self.title = Frame(TextArea(height=1,prompt="",multiline=False))
+        self.company = Frame(TextArea(height=1,prompt="",multiline=False))
+
+        self.keywords = Frame(TextArea(height=10,prompt="",multiline=False))
+        self.link = Frame(TextArea(height=10,prompt="",multiline=False))
+        self.description = Frame(TextArea(height=10,prompt="",multiline=True))
+
+        self.container = Frame(Box(HSplit([
+            Label("link"),
+            self.link,
+            Label("title"),
+            self.title,
+            Label("company"),
+            self.company,
+            Label("keywords"),
+            self.keywords,
+            Label("description"),
+            self.description
+            ])),title="New Job")

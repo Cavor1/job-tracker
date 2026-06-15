@@ -45,7 +45,7 @@ def create_keybindings(state : State,tui : TUI) -> KeyBindings:
     @kb.add("c-a",filter=is_main_view)
     def _(event):
         state.current_view = View.NEW_JOB
-        event.app.layout.focus(tui.new_job_view.buffer1)
+        event.app.layout.focus(tui.new_job_view.title)
         # event.app.invalidate()
 
     return kb
