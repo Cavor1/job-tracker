@@ -1,4 +1,6 @@
+from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.layout import CompletionsMenu, Float, FloatContainer
 from prompt_toolkit.layout.containers import HSplit, VSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.widgets import Box, Frame, Label, TextArea
@@ -25,6 +27,9 @@ class TUI:
             case View.NEW_JOB:
                 return self.new_job_view.container
 
+    def refresh(self):
+        self.state.jobs = get_jobs()
+
 
 class MainView:
     def __init__(self, state: State):
@@ -34,9 +39,9 @@ class MainView:
             FormattedTextControl(self.get_styled_job_titles_list), width=30
         )
         self.details_window = Window(FormattedTextControl(self.get_job_details))
-        self.container = HSplit(
-            [
-                Frame(
+        self.container = Frame(
+            HSplit(
+                [
                     Box(
                         VSplit(
                             [
@@ -46,9 +51,10 @@ class MainView:
                         ),
                         padding=1,
                     ),
-                    title="Job Tracker",
-                )
-            ]
+                    Box(Label("[c-a] : new job | [c-q] : exit | [enter] : submit"), height=1),
+                ]
+            ),
+            title="Job Tracker",
         )
 
     def get_styled_job_titles_list(self) -> list[tuple[str, str]]:
@@ -59,7 +65,6 @@ class MainView:
                 text.append(("class:selected", f"> {j.title}\n"))
             else:
                 text.append(("", f"{j.title}\n"))
-        log(f"{text}")
         return text
 
     def get_job_details(self):
@@ -73,43 +78,78 @@ class NewJobView:
     def __init__(self, state) -> None:
         self.title = TextArea(height=1, prompt="", multiline=False)
         self.company = TextArea(height=1, prompt="", multiline=False)
-
-        self.keywords = TextArea(height=10, prompt="", multiline=False)
-        self.link = TextArea(height=10, prompt="", multiline=False)
+        self.db_keywords = [k.keyword for k in get_keywords()]
+        self.keywords = TextArea(
+            height=1,
+            prompt="",
+            multiline=False,
+            completer=WordCompleter(self.db_keywords),
+        )
+        self.link = TextArea(height=1, prompt="", multiline=False)
         self.description = TextArea(height=10, prompt="", multiline=True)
 
-        self.container = Frame(
-            Box(
+        self.container = FloatContainer(
+            Frame(
                 HSplit(
                     [
-                        Label("link"),
-                        Frame(self.link),
-                        Label("title"),
-                        Frame(self.title),
-                        Label("company"),
-                        Frame(self.company),
-                        Label("keywords"),
-                        Frame(self.keywords),
-                        Label("description"),
-                        Frame(self.description),
+                        Box(
+                            HSplit(
+                                [
+                                    Label("link"),
+                                    Frame(self.link),
+                                    Label("title"),
+                                    Frame(self.title),
+                                    Label("company"),
+                                    Frame(self.company),
+                                    Label("keywords"),
+                                    Frame(self.keywords),
+                                    Label("description"),
+                                    Frame(self.description),
+                                ]
+                            )
+                        ),
+                        Box(Label("[c-up][c-down] : navigation | [q] : exit"), height=1),
                     ]
-                )
+                ),
+                title="New Job",
             ),
-            title="New Job",
+            floats=[
+                Float(
+                    xcursor=True,
+                    ycursor=True,
+                    content=CompletionsMenu(
+                        max_height=8,
+                        scroll_offset=1,
+                    ),
+                ),
+            ],
         )
 
+    def validate_form(self):
+        error = ""
+        if not self.title.text.strip():
+            error += "no title;"
+        if not self.link.text.strip():
+            error += "no link"
+        if not self.link.text.strip():
+            error += "no keywords"
+        return error
+
     def parse_form(self) -> Job:
+
+        error = self.validate_form()
+        if error:
+            raise Exception(error)
+
         form_keywords = {kw.strip().lower() for kw in self.keywords.text.split()}
-
         db_keywords = get_keywords()
-
         db_keywords_by_name = {kw.keyword: kw for kw in db_keywords}
-
         job_keywords: list[Keyword] = []
 
         for keyword_text in form_keywords:
             if keyword_text in db_keywords_by_name:
                 keyword = db_keywords_by_name[keyword_text]
+
             else:
                 keyword = Keyword(keyword=keyword_text)
                 db_keywords_by_name[keyword_text] = keyword
@@ -117,9 +157,9 @@ class NewJobView:
             job_keywords.append(keyword)
 
         return Job(
-            title=self.title.text,
-            link=self.link.text,
-            company=self.company.text,
+            title=self.title.text.strip(),
+            link=self.link.text.strip(),
+            company=self.company.text.strip() or None,
             keywords=job_keywords,
-            description=self.description.text,
+            description=self.description.text.strip() or None,
         )

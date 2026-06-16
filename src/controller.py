@@ -14,7 +14,7 @@ def get_jobs(session_factory: sessionmaker[Session] = SessionLocal) -> list[Job]
 
 def new_job(job: Job, session_factory: sessionmaker[Session] = SessionLocal):
     with session_factory() as session:
-        session.add(Job)
+        session.add(job)
         session.commit()
 
 

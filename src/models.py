@@ -25,7 +25,7 @@ class Job(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, init=False)
     title: Mapped[str]
     link: Mapped[str]
-    company: Mapped[str]
+    company: Mapped[str | None]
     description: Mapped[str | None]
     keywords: Mapped[list[Keyword]] = relationship(
         secondary=job_keywords, back_populates="jobs", default_factory=list
