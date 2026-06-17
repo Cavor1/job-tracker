@@ -1,4 +1,6 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, Table
+from datetime import datetime, timezone
+
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -25,8 +27,15 @@ class Job(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, init=False)
     title: Mapped[str]
     link: Mapped[str]
-    company: Mapped[str | None]
-    description: Mapped[str | None]
+    cv: Mapped[str | None] = mapped_column(default=None)
+    company: Mapped[str | None] = mapped_column(default=None)
+    description: Mapped[str | None] = mapped_column(default=None)
+    rejected: Mapped[bool | None] = mapped_column(default=None)
+    date_created: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default_factory=lambda: datetime.now(timezone.utc),
+        init=False,
+    )
     keywords: Mapped[list[Keyword]] = relationship(
         secondary=job_keywords, back_populates="jobs", default_factory=list
     )

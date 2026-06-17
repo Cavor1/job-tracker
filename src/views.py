@@ -108,7 +108,7 @@ class NewJobView:
                                 ]
                             )
                         ),
-                        Box(Label("[c-up][c-down] : navigation | [q] : exit"), height=1),
+                        Box(Label("[c-up][c-down] : navigation | [c-q] : exit | [enter] submit"), height=1),
                     ]
                 ),
                 title="New Job",
