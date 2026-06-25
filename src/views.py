@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import CompletionsMenu, Float, FloatContainer
@@ -36,7 +38,7 @@ class MainView:
         self.selected_index: int = 0
         self.state = state
         self.menu_window = Window(
-            FormattedTextControl(self.get_styled_job_titles_list), width=30
+            FormattedTextControl(self.get_styled_job_titles_list), width=70
         )
         self.details_window = Window(FormattedTextControl(self.get_job_details))
         self.container = Frame(
@@ -51,7 +53,10 @@ class MainView:
                         ),
                         padding=1,
                     ),
-                    Box(Label("[c-a] : new job | [c-q] : exit | [enter] : submit"), height=1),
+                    Box(
+                        Label("[c-a] : new job | [c-q] : exit | [enter] : submit"),
+                        height=1,
+                    ),
                 ]
             ),
             title="Job Tracker",
@@ -59,12 +64,21 @@ class MainView:
 
     def get_styled_job_titles_list(self) -> list[tuple[str, str]]:
         text: list[tuple[str, str]] = []
+        title_w = 35
+        event_w = 20
 
-        for i, j in enumerate(self.state.jobs):
-            if i == self.selected_index:
-                text.append(("class:selected", f"> {j.title}\n"))
-            else:
-                text.append(("", f"{j.title}\n"))
+        for i, job in enumerate(self.state.jobs):
+            style = "class:selected" if i == self.selected_index else ""
+            marker = "> " if i == self.selected_index else "  "
+            date = datetime.now().date()
+
+            text.append(
+                (
+                    style,
+                    f"{marker}{job.title[:title_w]:<{title_w}}{'event'[:event_w]:<{event_w}} {date}\n",
+                )
+            )
+
         return text
 
     def get_job_details(self):
@@ -108,7 +122,12 @@ class NewJobView:
                                 ]
                             )
                         ),
-                        Box(Label("[c-up][c-down] : navigation | [c-q] : exit | [enter] submit"), height=1),
+                        Box(
+                            Label(
+                                "[c-up][c-down] : navigation | [c-q] : exit | [enter] submit"
+                            ),
+                            height=1,
+                        ),
                     ]
                 ),
                 title="New Job",
