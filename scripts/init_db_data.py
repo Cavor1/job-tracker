@@ -5,8 +5,8 @@ from src.models import JobEventType
 
 
 COMMON_EVENT_TYPES = [
-    "app_sent",
-    "app_response",
+    "cv_sent",
+    "cv_response",
     "interview",
     "exam",
     "techical_task"

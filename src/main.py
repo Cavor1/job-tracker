@@ -8,8 +8,11 @@ from src.state import State
 from src.styles import style
 from src.views import TUI
 
+from scripts.init_db_data import seed_job_event_types
+
 if __name__ == "__main__":
     create_tables()
+    seed_job_event_types()
     log("hi")
     state = State()
     tui = TUI(state)
