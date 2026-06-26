@@ -1,6 +1,11 @@
 import datetime
+import logging
+logging.basicConfig(
+    filename="log.log",
+    level=logging.INFO,
+    format="%(asctime)s %(filename)s:%(lineno)d - %(message)s"
+)
 
 
 def log(message: str):
-    with open("log.log", "a") as f:
-        f.write(f"{datetime.datetime.now()}\t{message}\n")
+    logging.info(message,stacklevel=2)

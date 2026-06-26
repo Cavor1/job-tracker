@@ -7,9 +7,9 @@ from prompt_toolkit.layout.containers import HSplit, VSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.widgets import Box, Frame, Label, TextArea
 
-from src.controller import get_jobs, get_keywords
+from src.controller import get_cv_sent_event_type, get_jobs, get_keywords
 from src.logger import log
-from src.models import Job, Keyword
+from src.models import Job, JobEvent, JobEventType, Keyword
 from src.state import State, View
 
 
@@ -70,12 +70,18 @@ class MainView:
         for i, job in enumerate(self.state.jobs):
             style = "class:selected" if i == self.selected_index else ""
             marker = "> " if i == self.selected_index else "  "
-            date = datetime.now().date()
 
+            last_event =  max(job.job_events, key=lambda e: e.date, default=None)
+            if last_event is  None:
+                event_name = ""
+                event_date = ""
+            else:
+                event_name = last_event.event_type.name
+                event_date = last_event.date.date()
             text.append(
                 (
                     style,
-                    f"{marker}{job.title[:title_w]:<{title_w}}{'event'[:event_w]:<{event_w}} {date}\n",
+                    f"{marker}{job.title[:title_w]:<{title_w}}{event_name[:event_w]:<{event_w}} {event_date}\n",
                 )
             )
 
@@ -101,6 +107,8 @@ class NewJobView:
         )
         self.link = TextArea(height=1, prompt="", multiline=False)
         self.description = TextArea(height=10, prompt="", multiline=True)
+
+        self.cv_sent_type = get_cv_sent_event_type()
 
         self.container = FloatContainer(
             Frame(
@@ -175,10 +183,12 @@ class NewJobView:
 
             job_keywords.append(keyword)
 
-        return Job(
+        job = Job(
             title=self.title.text.strip(),
             link=self.link.text.strip(),
             company=self.company.text.strip() or None,
             keywords=job_keywords,
             description=self.description.text.strip() or None,
         )
+        job.job_events.append(JobEvent(event_type=self.cv_sent_type))
+        return job

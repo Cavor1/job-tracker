@@ -53,7 +53,7 @@ def create_keybindings(state: State, tui: TUI) -> KeyBindings:
         except Exception as e:
             log(f"{e}")
             return
-        log(f"{job}")
+        # log(f"{job}")
         new_job(job)
         tui.refresh()
         event.app.invalidate()
