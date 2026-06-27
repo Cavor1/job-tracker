@@ -1,4 +1,3 @@
-import datetime
 import logging
 logging.basicConfig(
     filename="log.log",

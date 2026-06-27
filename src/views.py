@@ -9,7 +9,7 @@ from prompt_toolkit.widgets import Box, Frame, Label, TextArea
 
 from src.controller import get_cv_sent_event_type, get_jobs, get_keywords
 from src.logger import log
-from src.models import Job, JobEvent, JobEventType, Keyword
+from src.models import Job, JobEvent, Keyword
 from src.state import State, View
 
 
@@ -71,8 +71,17 @@ class MainView:
             style = "class:selected" if i == self.selected_index else ""
             marker = "> " if i == self.selected_index else "  "
 
-            last_event =  max(job.job_events, key=lambda e: e.date, default=None)
-            if last_event is  None:
+            now = datetime.now()
+            past_events = [j for j in job.job_events if j.date < now]
+            future_events = [j for j in job.job_events if j.date >= now]
+
+            #next future event or last event if no future events.
+            last_event = (
+                max(past_events, key=lambda e: e.date, default=None)
+                if not future_events
+                else min(future_events, key=lambda e: e.date)
+            )
+            if last_event is None:
                 event_name = ""
                 event_date = ""
             else:

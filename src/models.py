@@ -39,7 +39,9 @@ class Job(Base):
         secondary=job_keywords, back_populates="jobs", default_factory=list
     )
     job_events: Mapped[list[JobEvent]] = relationship(
-        back_populates="job", cascade="all,delete-orphan", default_factory=list,
+        back_populates="job",
+        cascade="all,delete-orphan",
+        default_factory=list,
         order_by="JobEvent.date",
     )
 
@@ -69,7 +71,7 @@ class JobEvent(Base):
     event_type_id: Mapped[int] = mapped_column(
         ForeignKey("job_event_types.id"), init=False
     )
-    job: Mapped[Job] = relationship(back_populates="job_events",init=False)
+    job: Mapped[Job] = relationship(back_populates="job_events", init=False)
     event_type: Mapped[JobEventType] = relationship(back_populates="job_events")
     completed: Mapped[bool] = mapped_column(default=True)
     note: Mapped[str | None] = mapped_column(default=None)
