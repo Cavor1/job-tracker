@@ -22,10 +22,12 @@ def create_keybindings(state: State, tui: TUI) -> KeyBindings:
         state.current_view = View.MAIN
 
     @kb.add("c-down", filter=is_new_job_view)
+    @kb.add("tab", filter=is_new_job_view)
     def _(event):
         event.app.layout.focus_next()
 
     @kb.add("c-up", filter=is_new_job_view)
+    @kb.add("s-tab", filter=is_new_job_view)
     def _(event):
         event.app.layout.focus_previous()
 

@@ -141,7 +141,7 @@ class NewJobView:
                         ),
                         Box(
                             Label(
-                                "[c-up][c-down] : navigation | [c-q] : exit | [enter] submit"
+                                "[c-up][c-down] / [s-tab][tab] : navigation | [c-q] : exit | [enter] submit"
                             ),
                             height=1,
                         ),
