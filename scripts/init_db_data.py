@@ -9,7 +9,7 @@ COMMON_EVENT_TYPES = [
     "cv_response",
     "interview",
     "exam",
-    "techical_task"
+    "techical_task",
     "rejected",
     "accepted",
 ]
