@@ -1,13 +1,24 @@
 from datetime import datetime
 
 from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.filters import Condition
 from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.layout import CompletionsMenu, Float, FloatContainer
+from prompt_toolkit.layout import (
+    CompletionsMenu,
+    ConditionalContainer,
+    Float,
+    FloatContainer,
+)
 from prompt_toolkit.layout.containers import HSplit, VSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.widgets import Box, Frame, Label, TextArea
 
-from src.controller import get_cv_sent_event_type, get_jobs, get_keywords
+from src.controller import (
+    get_cv_sent_event_type,
+    get_event_types,
+    get_jobs,
+    get_keywords,
+)
 from src.logger import log
 from src.models import Job, JobEvent, Keyword
 from src.state import State, View
@@ -16,7 +27,7 @@ from src.state import State, View
 class TUI:
     def __init__(self, state: State) -> None:
         self.state = state
-        self.state.jobs = get_jobs()
+        self.refresh()
         log(f"{[j.title for j in self.state.jobs]}")
         self.kb = KeyBindings()
         self.main_view = MainView(state)
@@ -25,12 +36,17 @@ class TUI:
     def get_view(self):
         match self.state.current_view:
             case View.MAIN:
+                self.main_view.new_event_window.is_visible = False
                 return self.main_view.container
             case View.NEW_JOB:
                 return self.new_job_view.container
+            case View.NEW_EVENT:
+                self.main_view.new_event_window.is_visible = True
+                return self.main_view.container
 
     def refresh(self):
         self.state.jobs = get_jobs()
+        self.state.event_types = get_event_types()
 
 
 class MainView:
@@ -38,31 +54,51 @@ class MainView:
         self.selected_index: int = 0
         self.state = state
         self.menu_window = Window(
-            FormattedTextControl(self.get_styled_job_titles_list), width=70
+            FormattedTextControl(self._get_styled_job_titles_list), width=70
         )
-        self.details_window = Window(FormattedTextControl(self.get_job_details))
-        self.container = Frame(
-            HSplit(
-                [
-                    Box(
-                        VSplit(
-                            [
-                                Frame(self.menu_window, title="Jobs"),
-                                Frame(self.details_window, title="Details"),
-                            ]
+        self.details_window = Window(FormattedTextControl(self._get_job_details))
+        self.new_event_window = NewEventWindow(state)
+
+        self.new_event_float = self.new_event_window.float
+
+        self.container = self._create_container()
+
+    def _create_container(self):
+        return FloatContainer(
+            Frame(
+                HSplit(
+                    [
+                        Box(
+                            VSplit(
+                                [
+                                    Frame(self.menu_window, title="Jobs"),
+                                    Frame(self.details_window, title="Details"),
+                                ]
+                            ),
+                            padding=1,
                         ),
-                        padding=1,
-                    ),
-                    Box(
-                        Label("[c-a] : new job | [c-q] : exit | [enter] : submit"),
-                        height=1,
-                    ),
-                ]
+                        Box(
+                            Label("[c-a] : new job | [c-q] : exit | [enter] : submit"),
+                            height=1,
+                        ),
+                    ]
+                ),
+                title="Job Tracker",
             ),
-            title="Job Tracker",
+            floats=[
+                self.new_event_float,
+                Float(
+                    xcursor=True,
+                    ycursor=True,
+                    content=CompletionsMenu(
+                        max_height=8,
+                        scroll_offset=1,
+                    ),
+                ),
+            ],
         )
 
-    def get_styled_job_titles_list(self) -> list[tuple[str, str]]:
+    def _get_styled_job_titles_list(self) -> list[tuple[str, str]]:
         text: list[tuple[str, str]] = []
         title_w = 35
         event_w = 20
@@ -75,7 +111,7 @@ class MainView:
             past_events = [j for j in job.job_events if j.date < now]
             future_events = [j for j in job.job_events if j.date >= now]
 
-            #next future event or last event if no future events.
+            # next future event or last event if no future events.
             last_event = (
                 max(past_events, key=lambda e: e.date, default=None)
                 if not future_events
@@ -96,10 +132,14 @@ class MainView:
 
         return text
 
-    def get_job_details(self):
+    def _get_job_details(self):
         for i, j in enumerate(self.state.jobs):
             if i == self.selected_index:
-                return j.description
+                text = ""
+                for e in self.state.event_types:
+                    text += f"{e.name}\n"
+                log(text)
+                return text
         return ""
 
 
@@ -112,7 +152,7 @@ class NewJobView:
             height=1,
             prompt="",
             multiline=False,
-            completer=WordCompleter(self.db_keywords),
+            completer=WordCompleter(self.db_keywords, ignore_case=True),
         )
         self.link = TextArea(height=1, prompt="", multiline=False)
         self.description = TextArea(height=10, prompt="", multiline=True)
@@ -141,7 +181,7 @@ class NewJobView:
                         ),
                         Box(
                             Label(
-                                "[c-up][c-down] / [s-tab][tab] : navigation | [c-q] : exit | [enter] submit"
+                                "[c-up][c-down] / [s-tab][tab] : navigation | [c-space] : autocomplete | [c-q] : exit | [enter] submit"
                             ),
                             height=1,
                         ),
@@ -201,3 +241,32 @@ class NewJobView:
         )
         job.job_events.append(JobEvent(event_type=self.cv_sent_type))
         return job
+
+
+class NewEventWindow:
+    def __init__(self, state: State) -> None:
+        self.state = state
+        self.is_visible = False
+        self.float = Float(
+            ConditionalContainer(
+                Frame(
+                    HSplit(
+                        [
+                            Frame(TextArea(
+                                prompt="",
+                                multiline=False,
+                                height=1,
+                                completer=WordCompleter(["aaa", "bbb"]),
+                            )),
+                            Frame(TextArea(
+                                text=datetime.now().astimezone().strftime("%Y-%m-%d %H:%M"),
+                                multiline=False,
+                                height=1,
+                            ))
+                        ]
+                    ),
+                    width=30,
+                ),
+                filter=Condition(lambda: self.is_visible),
+            )
+        )

@@ -21,18 +21,30 @@ def get_jobs(
         )
 
 
+def get_event_types(
+    session_factory: sessionmaker[Session] = SessionLocal,
+) -> list[JobEventType]:
+    with session_factory() as session:
+        return list(session.execute(select(JobEventType)).scalars().all())
+
+
 def new_job(job: Job, session_factory: sessionmaker[Session] = SessionLocal):
     with session_factory() as session:
         session.add(job)
         session.commit()
 
-def get_cv_sent_event_type(session_factory : sessionmaker[Session] = SessionLocal) -> JobEventType:
+
+def get_cv_sent_event_type(
+    session_factory: sessionmaker[Session] = SessionLocal,
+) -> JobEventType:
     log("getting event type")
     cv_sent_type = None
     with session_factory() as session:
-        cv_sent_type = session.scalar(select(JobEventType).where(JobEventType.name == "cv_sent"))
+        cv_sent_type = session.scalar(
+            select(JobEventType).where(JobEventType.name == "cv_sent")
+        )
         log("got event type")
-    
+
     if cv_sent_type is None:
         log("creating new one")
         cv_sent_type = JobEventType("cv_sent")

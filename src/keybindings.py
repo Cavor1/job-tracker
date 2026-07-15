@@ -11,6 +11,7 @@ def create_keybindings(state: State, tui: TUI) -> KeyBindings:
     kb = KeyBindings()
     is_main_view = Condition(lambda: state.current_view == View.MAIN)
     is_new_job_view = Condition(lambda: state.current_view == View.NEW_JOB)
+    is_new_event_view = Condition(lambda: state.current_view == View.NEW_EVENT)
 
     @kb.add("c-q")
     @kb.add("c-c")
@@ -22,7 +23,7 @@ def create_keybindings(state: State, tui: TUI) -> KeyBindings:
         state.current_view = View.MAIN
 
     @kb.add("c-down", filter=is_new_job_view)
-    @kb.add("tab", filter=is_new_job_view)
+    @kb.add("tab", filter=(is_new_job_view | is_new_event_view))
     def _(event):
         event.app.layout.focus_next()
 
@@ -30,6 +31,19 @@ def create_keybindings(state: State, tui: TUI) -> KeyBindings:
     @kb.add("s-tab", filter=is_new_job_view)
     def _(event):
         event.app.layout.focus_previous()
+
+    @kb.add("enter", filter=is_new_job_view)
+    def _(event):
+        try:
+            job = tui.new_job_view.parse_form()
+        except Exception as e:
+            log(f"{e}")
+            return
+        # log(f"{job}")
+        new_job(job)
+        tui.refresh()
+        event.app.invalidate()
+        state.current_view = View.MAIN
 
     @kb.add("up", filter=is_main_view)
     def _(event):
@@ -48,17 +62,20 @@ def create_keybindings(state: State, tui: TUI) -> KeyBindings:
         state.current_view = View.NEW_JOB
         event.app.layout.focus(tui.new_job_view.link)
 
-    @kb.add("enter", filter=is_new_job_view)
+    @kb.add("enter", filter=is_main_view)
     def _(event):
-        try:
-            job = tui.new_job_view.parse_form()
-        except Exception as e:
-            log(f"{e}")
-            return
-        # log(f"{job}")
-        new_job(job)
-        tui.refresh()
-        event.app.invalidate()
+        state.current_view = View.NEW_EVENT
+
+
+    @kb.add("c-q", filter=is_new_event_view)
+    def _(event):
         state.current_view = View.MAIN
+    @kb.add("c-space")
+    def _(event):
+        #open completions
+        buffer = event.app.current_buffer
+
+        if buffer.completer is not None:
+            buffer.start_completion(select_first=False)
 
     return kb
