@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 
+from src.controller import get_cv_sent_event_type, get_event_types, get_jobs, get_keywords
 from src.models import Job, JobEventType, Keyword
 
 
@@ -12,8 +13,18 @@ class View(Enum):
 
 @dataclass
 class State:
+    cv_sent_type : JobEventType
     jobs: list[Job] = field(default_factory=list)
     current_view: View = View.MAIN
     selected_job_id: int | None = None
     event_types: list[JobEventType] = field(default_factory=list)
     keywords :list[Keyword] = field(default_factory=list)
+
+def load_state(state : State | None = None): 
+    state = state or State(get_cv_sent_event_type())
+
+    state.jobs = get_jobs()
+    state.event_types = get_event_types()
+    state.keywords = get_keywords()
+
+    return state

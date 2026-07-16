@@ -13,25 +13,19 @@ from prompt_toolkit.layout.containers import HSplit, VSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.widgets import Box, Frame, Label, TextArea
 
-from src.controller import (
-    get_cv_sent_event_type,
-    get_event_types,
-    get_jobs,
-    get_keywords,
-)
 from src.logger import log
 from src.models import Job, JobEvent, Keyword
-from src.state import State, View
+from src.state import State, View, load_state
 
 
 class TUI:
     def __init__(self, state: State) -> None:
-        self.state = state
+        self.state : State= state
         self.refresh()
         log(f"{[j.title for j in self.state.jobs]}")
-        self.kb = KeyBindings()
-        self.main_view = MainView(state)
-        self.new_job_view = NewJobView(state)
+        self.kb : KeyBindings = KeyBindings()
+        self.main_view : MainView = MainView(state)
+        self.new_job_view : NewJobView = NewJobView(state)
 
     def get_view(self):
         match self.state.current_view:
@@ -46,10 +40,7 @@ class TUI:
                 return self.main_view.container
 
     def refresh(self):
-        self.state.jobs = get_jobs()
-        self.state.event_types = get_event_types()
-        self.state.keywords = get_keywords()
-
+        load_state(self.state)
 
 
 class MainView:
@@ -149,19 +140,17 @@ class MainView:
 class NewJobView:
     def __init__(self, state : State) -> None:
         self.state : State = state
-        self.title = TextArea(height=1, prompt="", multiline=False)
-        self.company = TextArea(height=1, prompt="", multiline=False)
+        self.title : TextArea= TextArea(height=1, prompt="", multiline=False)
+        self.company : TextArea= TextArea(height=1, prompt="", multiline=False)
         self.db_keywords : list[str] = [k.keyword for k in self.state.keywords]
-        self.keywords = TextArea(
+        self.keywords : TextArea = TextArea(
             height=1,
             prompt="",
             multiline=False,
             completer=WordCompleter(self.db_keywords, ignore_case=True),
         )
-        self.link = TextArea(height=1, prompt="", multiline=False)
-        self.description = TextArea(height=10, prompt="", multiline=True)
-
-        self.cv_sent_type = get_cv_sent_event_type()
+        self.link : TextArea= TextArea(height=1, prompt="", multiline=False)
+        self.description : TextArea= TextArea(height=10, prompt="", multiline=True)
 
         self.container = FloatContainer(
             Frame(
@@ -204,6 +193,12 @@ class NewJobView:
                 ),
             ],
         )
+    def refresh(self):
+        self.db_keywords : list[str] = [k.keyword for k in self.state.keywords]
+        self.keywords.text = ""
+        self.link.text = ""
+
+
 
     def validate_form(self):
         error = ""
@@ -222,7 +217,7 @@ class NewJobView:
             raise Exception(error)
 
         form_keywords = {kw.strip().lower() for kw in self.keywords.text.split()}
-        db_keywords = get_keywords()
+        db_keywords = self.state.keywords
         db_keywords_by_name = {kw.keyword: kw for kw in db_keywords}
         job_keywords: list[Keyword] = []
 
@@ -243,7 +238,7 @@ class NewJobView:
             keywords=job_keywords,
             description=self.description.text.strip() or None,
         )
-        job.job_events.append(JobEvent(event_type=self.cv_sent_type))
+        job.job_events.append(JobEvent(event_type=self.state.cv_sent_type))
         return job
 
 
