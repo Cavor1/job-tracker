@@ -256,7 +256,7 @@ class NewEventWindow:
                                 prompt="",
                                 multiline=False,
                                 height=1,
-                                completer=WordCompleter(["aaa", "bbb"]),
+                                completer=WordCompleter([i.name for i in state.event_types]),
                             )),
                             Frame(TextArea(
                                 text=datetime.now().astimezone().strftime("%Y-%m-%d %H:%M"),
