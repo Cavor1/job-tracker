@@ -13,7 +13,7 @@ def create_keybindings(state: State, tui: TUI) -> KeyBindings:
     is_new_job_view = Condition(lambda: state.current_view == View.NEW_JOB)
     is_new_event_view = Condition(lambda: state.current_view == View.NEW_EVENT)
 
-    @kb.add("c-q")
+    @kb.add("c-q",filter=is_main_view)
     @kb.add("c-c")
     def _(event):
         event.app.exit()
@@ -70,6 +70,8 @@ def create_keybindings(state: State, tui: TUI) -> KeyBindings:
     @kb.add("c-q", filter=is_new_event_view)
     def _(event):
         state.current_view = View.MAIN
+        tui.main_view.new_event_window.event_type_text_area.buffer.cancel_completion()
+        event.app.invalidate()
     @kb.add("c-space")
     def _(event):
         #open completions

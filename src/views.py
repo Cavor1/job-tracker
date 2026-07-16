@@ -37,6 +37,7 @@ class TUI:
         match self.state.current_view:
             case View.MAIN:
                 self.main_view.new_event_window.is_visible = False
+
                 return self.main_view.container
             case View.NEW_JOB:
                 return self.new_job_view.container
@@ -47,6 +48,8 @@ class TUI:
     def refresh(self):
         self.state.jobs = get_jobs()
         self.state.event_types = get_event_types()
+        self.state.keywords = get_keywords()
+
 
 
 class MainView:
@@ -144,10 +147,11 @@ class MainView:
 
 
 class NewJobView:
-    def __init__(self, state) -> None:
+    def __init__(self, state : State) -> None:
+        self.state : State = state
         self.title = TextArea(height=1, prompt="", multiline=False)
         self.company = TextArea(height=1, prompt="", multiline=False)
-        self.db_keywords = [k.keyword for k in get_keywords()]
+        self.db_keywords : list[str] = [k.keyword for k in self.state.keywords]
         self.keywords = TextArea(
             height=1,
             prompt="",
@@ -247,22 +251,24 @@ class NewEventWindow:
     def __init__(self, state: State) -> None:
         self.state = state
         self.is_visible = False
+        self.event_type_text_area = TextArea(
+            multiline=False,
+            height=1,
+            completer=WordCompleter([i.name for i in state.event_types]),
+        )
+        self.date_text_area = TextArea(
+            text=datetime.now().astimezone().strftime("%Y-%m-%d %H:%M"),
+            multiline=False,
+            height=1,
+        )
+
         self.float = Float(
             ConditionalContainer(
                 Frame(
                     HSplit(
                         [
-                            Frame(TextArea(
-                                prompt="",
-                                multiline=False,
-                                height=1,
-                                completer=WordCompleter([i.name for i in state.event_types]),
-                            )),
-                            Frame(TextArea(
-                                text=datetime.now().astimezone().strftime("%Y-%m-%d %H:%M"),
-                                multiline=False,
-                                height=1,
-                            ))
+                            Frame(self.event_type_text_area),
+                            Frame(self.date_text_area),
                         ]
                     ),
                     width=30,
@@ -270,3 +276,9 @@ class NewEventWindow:
                 filter=Condition(lambda: self.is_visible),
             )
         )
+
+    def validate_form(self):
+        pass
+
+    def parse_form(self):
+        pass

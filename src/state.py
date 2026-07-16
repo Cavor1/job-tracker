@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 
-from src.models import Job, JobEventType
+from src.models import Job, JobEventType, Keyword
 
 
 class View(Enum):
@@ -16,3 +16,4 @@ class State:
     current_view: View = View.MAIN
     selected_job_id: int | None = None
     event_types: list[JobEventType] = field(default_factory=list)
+    keywords :list[Keyword] = field(default_factory=list)
