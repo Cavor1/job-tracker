@@ -4,7 +4,7 @@ from prompt_toolkit.layout import DynamicContainer, Layout
 from src.database import create_tables
 from src.keybindings import create_keybindings
 from src.logger import log
-from src.state import State, load_state
+from src.state import load_state
 from src.styles import style
 from src.views import TUI
 

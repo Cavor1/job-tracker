@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 from src.controller import get_cv_sent_event_type, get_event_types, get_jobs, get_keywords
+from src.logger import log
 from src.models import Job, JobEventType, Keyword
 
 
@@ -25,6 +26,7 @@ def load_state(state : State | None = None):
 
     state.jobs = get_jobs()
     state.event_types = get_event_types()
+    log(str([et.name for et in state.event_types]))
     state.keywords = get_keywords()
 
     return state

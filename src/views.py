@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.filters import Condition
@@ -14,7 +14,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.widgets import Box, Frame, Label, TextArea
 
 from src.logger import log
-from src.models import Job, JobEvent, Keyword
+from src.models import Job, JobEvent, JobEventType, Keyword
 from src.state import State, View, load_state
 
 
@@ -22,7 +22,6 @@ class TUI:
     def __init__(self, state: State) -> None:
         self.state : State= state
         self.refresh()
-        log(f"{[j.title for j in self.state.jobs]}")
         self.kb : KeyBindings = KeyBindings()
         self.main_view : MainView = MainView(state)
         self.new_job_view : NewJobView = NewJobView(state)
@@ -40,6 +39,7 @@ class TUI:
                 return self.main_view.container
 
     def refresh(self):
+        log("State refresh")
         load_state(self.state)
 
 
@@ -47,8 +47,9 @@ class MainView:
     def __init__(self, state: State):
         self.selected_index: int = 0
         self.state = state
+        self.state.selected_job_id = self.state.jobs[self.selected_index].id
         self.menu_window = Window(
-            FormattedTextControl(self._get_styled_job_titles_list), width=70
+            FormattedTextControl(self._get_styled_job_titles_list), width=75
         )
         self.details_window = Window(FormattedTextControl(self._get_job_details))
         self.new_event_window = NewEventWindow(state)
@@ -101,9 +102,10 @@ class MainView:
             style = "class:selected" if i == self.selected_index else ""
             marker = "> " if i == self.selected_index else "  "
 
-            now = datetime.now()
-            past_events = [j for j in job.job_events if j.date < now]
-            future_events = [j for j in job.job_events if j.date >= now]
+            now = datetime.now(timezone.utc)
+            past_events = [j for j in job.job_events if j.date.replace(tzinfo=timezone.utc) < now]
+            log(str([e.event_type.name for e in past_events]))
+            future_events = [j for j in job.job_events if j.date.replace(tzinfo=timezone.utc) >= now]
 
             # next future event or last event if no future events.
             last_event = (
@@ -116,7 +118,8 @@ class MainView:
                 event_date = ""
             else:
                 event_name = last_event.event_type.name
-                event_date = last_event.date.date()
+                event_date = last_event.date.strftime("%Y-%m-%d %H:%M")
+
             text.append(
                 (
                     style,
@@ -130,12 +133,20 @@ class MainView:
         for i, j in enumerate(self.state.jobs):
             if i == self.selected_index:
                 text = ""
-                for e in self.state.event_types:
-                    text += f"{e.name}\n"
-                log(text)
+                for event in self.state.event_types:
+                    text += "" #"{event.name}\n"
                 return text
         return ""
-
+    def select_prev(self):
+        self.selected_index = (self.selected_index - 1) % len(
+            self.state.jobs
+        )
+        self.state.selected_job_id = self.state.jobs[self.selected_index].id
+    def select_next(self):
+        self.selected_index = (self.selected_index + 1) % len(
+            self.state.jobs
+        )
+        self.state.selected_job_id = self.state.jobs[self.selected_index].id
 
 class NewJobView:
     def __init__(self, state : State) -> None:
@@ -194,9 +205,12 @@ class NewJobView:
             ],
         )
     def refresh(self):
-        self.db_keywords : list[str] = [k.keyword for k in self.state.keywords]
+        self.db_keywords.clear()
+        self.db_keywords.extend([k.keyword for k in self.state.keywords])
         self.keywords.text = ""
         self.link.text = ""
+        self.company.text = ""
+        self.title.text = ""
 
 
 
@@ -273,7 +287,20 @@ class NewEventWindow:
         )
 
     def validate_form(self):
-        pass
+        error = ""
+        if self.event_type_text_area.text not in [et.name for et in self.state.event_types]:
+            error += f"no selected type :{self.event_type_text_area.text};"
+        return error
 
     def parse_form(self):
-        pass
+        error = self.validate_form()
+        if error:
+            raise ValueError(error)
+
+        event_type : JobEventType = [et for et in self.state.event_types if et.name == self.event_type_text_area.text][0]
+        job_event = JobEvent(event_type=event_type)
+        if self.state.selected_job_id is not None:
+            job_event.job_id = self.state.selected_job_id
+        else:
+            raise ValueError("No job selected")
+        return job_event

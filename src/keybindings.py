@@ -1,8 +1,9 @@
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.key_binding import KeyBindings
 
-from src.controller import new_job
+from src.controller import new_job, new_job_event
 from src.logger import log
+from src.models import JobEvent
 from src.state import State, View
 from src.views import TUI
 
@@ -18,8 +19,10 @@ def create_keybindings(state: State, tui: TUI) -> KeyBindings:
     def _(event):
         event.app.exit()
 
-    @kb.add("b", filter=is_new_job_view)
+    @kb.add("c-q", filter=is_new_job_view)
     def _(event):
+
+        tui.main_view.new_event_window.event_type_text_area.buffer.cancel_completion()
         state.current_view = View.MAIN
 
     @kb.add("c-down", filter=is_new_job_view)
@@ -37,26 +40,23 @@ def create_keybindings(state: State, tui: TUI) -> KeyBindings:
         try:
             job = tui.new_job_view.parse_form()
         except Exception as e:
-            log(f"{e}")
+            log(f"ERROR: {e}")
             return
         # log(f"{job}")
+        tui.main_view.new_event_window.event_type_text_area.buffer.cancel_completion()
+
         new_job(job)
         tui.refresh()
+        tui.new_job_view.refresh()
         event.app.invalidate()
         state.current_view = View.MAIN
 
     @kb.add("up", filter=is_main_view)
     def _(event):
-        tui.main_view.selected_index = (tui.main_view.selected_index - 1) % len(
-            state.jobs
-        )
-
+        tui.main_view.select_prev()
     @kb.add("down", filter=is_main_view)
     def _(event):
-        tui.main_view.selected_index = (tui.main_view.selected_index + 1) % len(
-            state.jobs
-        )
-
+        tui.main_view.select_next()
     @kb.add("c-a", filter=is_main_view)
     def _(event):
         state.current_view = View.NEW_JOB
@@ -72,7 +72,21 @@ def create_keybindings(state: State, tui: TUI) -> KeyBindings:
         state.current_view = View.MAIN
         tui.main_view.new_event_window.event_type_text_area.buffer.cancel_completion()
         event.app.invalidate()
-    @kb.add("c-space")
+
+    @kb.add("enter", filter=is_new_event_view)
+    def _(event):
+        try: 
+            job_event : JobEvent = tui.main_view.new_event_window.parse_form()
+        except Exception as e:
+            raise Exception(e)
+        new_job_event(job_event)
+
+        tui.main_view.new_event_window.event_type_text_area.buffer.cancel_completion()
+        tui.refresh()
+        state.current_view = View.MAIN
+        event.app.invalidate()
+
+    @kb.add("c-space", filter=~is_main_view)
     def _(event):
         #open completions
         buffer = event.app.current_buffer

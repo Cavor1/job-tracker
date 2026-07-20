@@ -9,7 +9,7 @@ BASE_PATH = Path(__file__).resolve().parent.parent
 DATABASE_PATH = BASE_PATH / "database" / "job_tracker.db"
 
 engine = create_engine(f"sqlite:///{DATABASE_PATH}")
-SessionLocal = sessionmaker(engine)
+SessionLocal = sessionmaker(engine,expire_on_commit=False)
 
 
 def create_tables():

@@ -34,6 +34,14 @@ def new_job(job: Job, session_factory: sessionmaker[Session] = SessionLocal):
         session.commit()
 
 
+def new_job_event(
+    job_event: JobEvent, session_factory: sessionmaker[Session] = SessionLocal
+):
+    with session_factory() as session:
+        session.add(job_event)
+        session.commit()
+
+
 def get_cv_sent_event_type(
     session_factory: sessionmaker[Session] = SessionLocal,
 ) -> JobEventType:
