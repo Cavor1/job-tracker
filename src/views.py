@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.filters import Condition
@@ -16,6 +16,7 @@ from prompt_toolkit.widgets import Box, Frame, Label, TextArea
 from src.logger import log
 from src.models import Job, JobEvent, JobEventType, Keyword
 from src.state import State, View, load_state
+from src.utils import get_next_or_last_event
 
 
 class TUI:
@@ -93,26 +94,22 @@ class MainView:
             ],
         )
 
+    def _get_job_current_event():
+        pass
+
     def _get_styled_job_titles_list(self) -> list[tuple[str, str]]:
         text: list[tuple[str, str]] = []
         title_w = 35
         event_w = 20
 
-        for i, job in enumerate(self.state.jobs):
+        # jobs_with_event = [(j,) for j in self.state.jobs]
+
+        for i, job in enumerate(self.state.jobs_visible):
             style = "class:selected" if i == self.selected_index else ""
             marker = "> " if i == self.selected_index else "  "
 
-            now = datetime.now(timezone.utc)
-            past_events = [j for j in job.job_events if j.date.replace(tzinfo=timezone.utc) < now]
-            log(str([e.event_type.name for e in past_events]))
-            future_events = [j for j in job.job_events if j.date.replace(tzinfo=timezone.utc) >= now]
-
-            # next future event or last event if no future events.
-            last_event = (
-                max(past_events, key=lambda e: e.date, default=None)
-                if not future_events
-                else min(future_events, key=lambda e: e.date)
-            )
+            last_event = get_next_or_last_event(job)
+            
             if last_event is None:
                 event_name = ""
                 event_date = ""
@@ -134,7 +131,7 @@ class MainView:
             if i == self.selected_index:
                 text = ""
                 for event in self.state.event_types:
-                    text += "" #"{event.name}\n"
+                    text += f"{event.name}\n"
                 return text
         return ""
     def select_prev(self):
@@ -228,7 +225,7 @@ class NewJobView:
 
         error = self.validate_form()
         if error:
-            raise Exception(error)
+            raise ValueError(error)
 
         form_keywords = {kw.strip().lower() for kw in self.keywords.text.split()}
         db_keywords = self.state.keywords
@@ -266,7 +263,7 @@ class NewEventWindow:
             completer=WordCompleter([i.name for i in state.event_types]),
         )
         self.date_text_area = TextArea(
-            text=datetime.now().astimezone().strftime("%Y-%m-%d %H:%M"),
+            text=datetime.now().astimezone().strftime("%Y-%m-%d %H:%M%z"),
             multiline=False,
             height=1,
         )
@@ -286,21 +283,32 @@ class NewEventWindow:
             )
         )
 
-    def validate_form(self):
+    def validate_event(self):
         error = ""
         if self.event_type_text_area.text not in [et.name for et in self.state.event_types]:
             error += f"no selected type :{self.event_type_text_area.text};"
         return error
 
     def parse_form(self):
-        error = self.validate_form()
+        error = ""
+        error += self.validate_event()
+        error += self.validate_date()
         if error:
             raise ValueError(error)
 
-        event_type : JobEventType = [et for et in self.state.event_types if et.name == self.event_type_text_area.text][0]
-        job_event = JobEvent(event_type=event_type)
+        event_type : JobEventType = next(et for et in self.state.event_types if et.name == self.event_type_text_area.text)
+        event_date : datetime = datetime.fromisoformat(self.date_text_area.text).astimezone(UTC)
+        job_event = JobEvent(event_type=event_type,date=event_date)
         if self.state.selected_job_id is not None:
             job_event.job_id = self.state.selected_job_id
         else:
             raise ValueError("No job selected")
+
         return job_event
+    def validate_date(self):
+        error = ""
+        try:
+            datetime.fromisoformat(self.date_text_area.text)
+        except ValueError:
+            error += "Wrong date format, should be ISO like;"
+        return error

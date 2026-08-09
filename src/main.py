@@ -1,14 +1,13 @@
 from prompt_toolkit import Application
 from prompt_toolkit.layout import DynamicContainer, Layout
 
+from scripts.init_db_data import seed_job_event_types
 from src.database import create_tables
 from src.keybindings import create_keybindings
 from src.logger import log
 from src.state import load_state
 from src.styles import style
 from src.views import TUI
-
-from scripts.init_db_data import seed_job_event_types
 
 if __name__ == "__main__":
     create_tables()

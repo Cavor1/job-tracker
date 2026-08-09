@@ -1,9 +1,15 @@
 from dataclasses import dataclass, field
 from enum import Enum
 
-from src.controller import get_cv_sent_event_type, get_event_types, get_jobs, get_keywords
+from src.controller import (
+    get_cv_sent_event_type,
+    get_event_types,
+    get_jobs,
+    get_keywords,
+)
 from src.logger import log
 from src.models import Job, JobEventType, Keyword
+from src.utils import get_next_or_last_event
 
 
 class View(Enum):
@@ -16,15 +22,19 @@ class View(Enum):
 class State:
     cv_sent_type : JobEventType
     jobs: list[Job] = field(default_factory=list)
+    jobs_visible : list[Job] = field(default_factory=list)
     current_view: View = View.MAIN
     selected_job_id: int | None = None
     event_types: list[JobEventType] = field(default_factory=list)
     keywords :list[Keyword] = field(default_factory=list)
 
+
+
 def load_state(state : State | None = None): 
     state = state or State(get_cv_sent_event_type())
 
     state.jobs = get_jobs()
+    state.jobs_visible  = sorted(state.jobs, reverse=True,key=lambda j: get_next_or_last_event(j).date)
     state.event_types = get_event_types()
     log(str([et.name for et in state.event_types]))
     state.keywords = get_keywords()

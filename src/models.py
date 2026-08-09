@@ -1,4 +1,5 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
+
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table
 from sqlalchemy.orm import (
     DeclarativeBase,
@@ -32,7 +33,7 @@ class Job(Base):
     rejected: Mapped[bool | None] = mapped_column(default=None)
     date_created: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         init=False,
     )
     keywords: Mapped[list[Keyword]] = relationship(
@@ -75,8 +76,8 @@ class JobEvent(Base):
     event_type: Mapped[JobEventType] = relationship(back_populates="job_events")
     completed: Mapped[bool] = mapped_column(default=True)
     note: Mapped[str | None] = mapped_column(default=None)
+    #timezone info is lost when stored in database
     date: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default_factory=lambda: datetime.now(timezone.utc),
-        init=False,
+        default_factory=lambda: datetime.now(UTC),
     )
