@@ -48,9 +48,9 @@ class MainView:
     def __init__(self, state: State):
         self.selected_index: int = 0
         self.state = state
-        self.state.selected_job_id = self.state.jobs[self.selected_index].id
+        self.state.selected_job_id = self.state.jobs_visible[self.selected_index].id
         self.menu_window = Window(
-            FormattedTextControl(self._get_styled_job_titles_list), width=75
+            FormattedTextControl(self._get_styled_job_titles_list), width=70
         )
         self.details_window = Window(FormattedTextControl(self._get_job_details))
         self.new_event_window = NewEventWindow(state)
@@ -94,12 +94,10 @@ class MainView:
             ],
         )
 
-    def _get_job_current_event():
-        pass
 
     def _get_styled_job_titles_list(self) -> list[tuple[str, str]]:
         text: list[tuple[str, str]] = []
-        title_w = 35
+        title_w = 30
         event_w = 20
 
         # jobs_with_event = [(j,) for j in self.state.jobs]
@@ -115,7 +113,7 @@ class MainView:
                 event_date = ""
             else:
                 event_name = last_event.event_type.name
-                event_date = last_event.date.strftime("%Y-%m-%d %H:%M")
+                event_date = last_event.date.replace(tzinfo=UTC).astimezone().strftime("%Y-%m-%d %H:%M")
 
             text.append(
                 (
@@ -127,23 +125,27 @@ class MainView:
         return text
 
     def _get_job_details(self):
-        for i, j in enumerate(self.state.jobs):
-            if i == self.selected_index:
-                text = ""
-                for event in self.state.event_types:
-                    text += f"{event.name}\n"
-                return text
-        return ""
+        selected_job = self.state.jobs_visible[self.selected_index]
+        title = selected_job.title + "\n"
+        recent_events = sorted(selected_job.job_events,key=lambda je: je.date,reverse=True)[0:5]
+        recent_events_text = ""
+        for re in recent_events:
+            recent_events_text += f"{re.event_type.name} {re.date.replace(tzinfo=UTC).astimezone()}\n"
+        description = selected_job.description or ""
+
+        return title + "\n" + recent_events_text + "\n" + description
+    
+
     def select_prev(self):
         self.selected_index = (self.selected_index - 1) % len(
-            self.state.jobs
+            self.state.jobs_visible
         )
-        self.state.selected_job_id = self.state.jobs[self.selected_index].id
+        self.state.selected_job_id = self.state.jobs_visible[self.selected_index].id
     def select_next(self):
         self.selected_index = (self.selected_index + 1) % len(
-            self.state.jobs
+            self.state.jobs_visible
         )
-        self.state.selected_job_id = self.state.jobs[self.selected_index].id
+        self.state.selected_job_id = self.state.jobs_visible[self.selected_index].id
 
 class NewJobView:
     def __init__(self, state : State) -> None:
