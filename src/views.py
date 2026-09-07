@@ -127,13 +127,12 @@ class MainView:
     def _get_job_details(self):
         selected_job = self.state.jobs_visible[self.selected_index]
         title = selected_job.title + "\n"
-        recent_events = sorted(selected_job.job_events,key=lambda je: je.date,reverse=True)[0:5]
-        recent_events_text = ""
-        for re in recent_events:
-            recent_events_text += f"{re.event_type.name} {re.date.replace(tzinfo=UTC).astimezone()}\n"
+        keywords = "".join([f"{k.keyword}\n" for k in selected_job.keywords])
+        recent_events = sorted(selected_job.job_events,key=lambda je: je.date,reverse=True)
+        recent_events_text = "".join([f"{re.event_type.name} {re.date.replace(tzinfo=UTC).astimezone()}\n" for re in recent_events])
         description = selected_job.description or ""
 
-        return title + "\n" + recent_events_text + "\n" + description
+        return title + "\nkeywords\n"+ keywords+ "\nevents\n" + recent_events_text + "\ndescription\n" + description
     
 
     def select_prev(self):

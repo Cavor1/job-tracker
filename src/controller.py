@@ -13,7 +13,8 @@ def get_jobs(
         return list(
             session.execute(
                 select(Job).options(
-                    selectinload(Job.job_events).selectinload(JobEvent.event_type)
+                    selectinload(Job.job_events).selectinload(JobEvent.event_type),
+                    selectinload(Job.keywords)
                 )
             )
             .scalars()
