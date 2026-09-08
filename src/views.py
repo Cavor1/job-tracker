@@ -48,7 +48,9 @@ class MainView:
     def __init__(self, state: State):
         self.selected_index: int = 0
         self.state = state
-        self.state.selected_job_id = self.state.jobs_visible[self.selected_index].id
+        self.state.selected_job_id = None
+        if self.state.jobs_visible:
+            self.state.selected_job_id = self.state.jobs_visible[self.selected_index].id
         self.menu_window = Window(
             FormattedTextControl(self._get_styled_job_titles_list), width=70
         )
@@ -125,6 +127,8 @@ class MainView:
         return text
 
     def _get_job_details(self):
+        if not self.state.jobs_visible:
+            return "Empty job application list"
         selected_job = self.state.jobs_visible[self.selected_index]
         title = selected_job.title + "\n"
         keywords = "".join([f"{k.keyword}\n" for k in selected_job.keywords])
