@@ -1,11 +1,11 @@
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.key_binding import KeyBindings
 
-from src.controller import new_job, new_job_event
-from src.logger import log
-from src.models import JobEvent
-from src.state import State, View
-from src.views import TUI
+from job_tracker.controller import new_job, new_job_event
+from job_tracker.logger import log
+from job_tracker.models import JobEvent
+from job_tracker.state import State, View
+from job_tracker.views import TUI
 
 
 def create_keybindings(state: State, tui: TUI) -> KeyBindings:

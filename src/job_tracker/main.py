@@ -1,15 +1,15 @@
 from prompt_toolkit import Application
 from prompt_toolkit.layout import DynamicContainer, Layout
 
-from scripts.init_db_data import seed_job_event_types
-from src.database import create_tables
-from src.keybindings import create_keybindings
-from src.logger import log
-from src.state import load_state
-from src.styles import style
-from src.views import TUI
+from job_tracker.utils import seed_job_event_types
+from job_tracker.database import create_tables
+from job_tracker.keybindings import create_keybindings
+from job_tracker.logger import log
+from job_tracker.state import load_state
+from job_tracker.styles import style
+from job_tracker.views import TUI
 
-if __name__ == "__main__":
+def main():
     create_tables()
     seed_job_event_types()
     log("hi")
@@ -24,3 +24,8 @@ if __name__ == "__main__":
         style=style,
     )
     app.run()
+
+if __name__ == "__main__":
+    main()
+
+

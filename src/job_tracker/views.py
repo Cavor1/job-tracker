@@ -13,10 +13,10 @@ from prompt_toolkit.layout.containers import HSplit, VSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.widgets import Box, Frame, Label, TextArea
 
-from src.logger import log
-from src.models import Job, JobEvent, JobEventType, Keyword
-from src.state import State, View, load_state
-from src.utils import get_next_or_last_event
+from job_tracker.logger import log
+from job_tracker.models import Job, JobEvent, JobEventType, Keyword
+from job_tracker.state import State, View, load_state
+from job_tracker.utils import get_next_or_last_event
 
 
 class TUI:

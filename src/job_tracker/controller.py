@@ -1,9 +1,9 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload, sessionmaker
 
-from src.database import SessionLocal
-from src.logger import log
-from src.models import Job, JobEvent, JobEventType, Keyword
+from job_tracker.database import SessionLocal
+from job_tracker.logger import log
+from job_tracker.models import Job, JobEvent, JobEventType, Keyword
 
 
 def get_jobs(

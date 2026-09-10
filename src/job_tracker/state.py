@@ -1,15 +1,15 @@
 from dataclasses import dataclass, field
 from enum import Enum
 
-from src.controller import (
+from job_tracker.controller import (
     get_cv_sent_event_type,
     get_event_types,
     get_jobs,
     get_keywords,
 )
-from src.logger import log
-from src.models import Job, JobEventType, Keyword
-from src.utils import get_next_or_last_event
+from job_tracker.logger import log
+from job_tracker.models import Job, JobEventType, Keyword
+from job_tracker.utils import get_next_or_last_event
 
 
 class View(Enum):

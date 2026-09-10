@@ -3,12 +3,16 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from src.models import Base
+from job_tracker.models import Base
 
-BASE_PATH = Path(__file__).resolve().parent.parent
-DATABASE_PATH = BASE_PATH / "database" / "job_tracker.db"
+import os
 
-engine = create_engine(f"sqlite:///{DATABASE_PATH}")
+from dotenv import load_dotenv
+
+load_dotenv()
+DB_PATH = os.getenv("DB_PATH")
+
+engine = create_engine(f"sqlite:///{DB_PATH}")
 SessionLocal = sessionmaker(engine,expire_on_commit=False)
 
 
