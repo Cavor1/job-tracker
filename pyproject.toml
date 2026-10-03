@@ -8,6 +8,7 @@ dependencies = [
     "dotenv>=0.9.9",
     "prompt-toolkit>=3.0.52",
     "pytest>=9.0.3",
+    "rendercv[full]>=2.8",
     "sqlalchemy>=2.0.50",
 ]
 
