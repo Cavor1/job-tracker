@@ -94,7 +94,7 @@ def create_keybindings(state: State, tui: TUI) -> KeyBindings:
 
     #SHARED KEYBINDINGS
 
-    @kb.add("c-space", filter=(is_new_job_view | is_new_event_view))
+    @kb.add("space", filter=(is_new_job_view | is_new_event_view))
     def _(event):
         #open completions
         buffer = event.app.current_buffer

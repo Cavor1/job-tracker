@@ -272,6 +272,10 @@ class NewEventWindow:
             multiline=False,
             height=1,
         )
+        self.note_text_area = TextArea(
+            multiline=True,
+            height=5,
+        )
 
         self.float = Float(
             ConditionalContainer(
@@ -280,6 +284,7 @@ class NewEventWindow:
                         [
                             Frame(self.event_type_text_area),
                             Frame(self.date_text_area),
+                            Frame(self.note_text_area),
                         ]
                     ),
                     width=30,
@@ -301,9 +306,12 @@ class NewEventWindow:
         if error:
             raise ValueError(error)
 
+        #next() gets first element of list, filter by name, assumes text area is validated (it is)
         event_type : JobEventType = next(et for et in self.state.event_types if et.name == self.event_type_text_area.text)
         event_date : datetime = datetime.fromisoformat(self.date_text_area.text).astimezone(UTC)
-        job_event = JobEvent(event_type=event_type,date=event_date)
+        event_note : str | None = self.note_text_area.text or None
+
+        job_event = JobEvent(event_type=event_type,date=event_date,note=event_note)
         if self.state.selected_job_id is not None:
             job_event.job_id = self.state.selected_job_id
         else:
