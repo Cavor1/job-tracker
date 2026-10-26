@@ -1,7 +1,8 @@
+from os import waitstatus_to_exitcode
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.key_binding import KeyBindings
 
-from job_tracker.controller import new_job, new_job_event
+from job_tracker.controller import new_job, new_job_event, del_job
 from job_tracker.logger import log
 from job_tracker.models import JobEvent
 from job_tracker.state import State, View
@@ -40,6 +41,12 @@ def create_keybindings(state: State, tui: TUI) -> KeyBindings:
     def _(event):
         state.current_view = View.NEW_EVENT
         event.app.layout.focus(tui.main_view.new_event_window.event_type_text_area)
+
+    @kb.add("delete",filter=is_main_view)
+    def _(event):
+        if state.selected_job_id:
+            del_job(state.selected_job_id)
+            tui.refresh()
 
     #NEW JOB KEYBINDINGS
 
@@ -94,7 +101,7 @@ def create_keybindings(state: State, tui: TUI) -> KeyBindings:
 
     #SHARED KEYBINDINGS
 
-    @kb.add("space", filter=(is_new_job_view | is_new_event_view))
+    @kb.add("c-right", filter=(is_new_job_view | is_new_event_view))
     def _(event):
         #open completions
         buffer = event.app.current_buffer

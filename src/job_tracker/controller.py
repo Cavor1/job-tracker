@@ -42,6 +42,21 @@ def new_job_event(
         session.add(job_event)
         session.commit()
 
+def del_job(
+    job_id: int,
+    session_factory: sessionmaker[Session] = SessionLocal,
+) -> bool:
+    with session_factory() as session:
+        job = session.get(Job, job_id)
+
+        if job is None:
+            return False
+
+        session.delete(job)
+        session.commit()
+
+        return True
+
 
 def get_cv_sent_event_type(
     session_factory: sessionmaker[Session] = SessionLocal,

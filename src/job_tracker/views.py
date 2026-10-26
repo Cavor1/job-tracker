@@ -31,6 +31,7 @@ class TUI:
         match self.state.current_view:
             case View.MAIN:
                 self.main_view.new_event_window.is_visible = False
+                self.main_view.refresh()
 
                 return self.main_view.container
             case View.NEW_JOB:
@@ -49,8 +50,7 @@ class MainView:
         self.selected_index: int = 0
         self.state = state
         self.state.selected_job_id = None
-        if self.state.jobs_visible:
-            self.state.selected_job_id = self.state.jobs_visible[self.selected_index].id
+
         self.menu_window = Window(
             FormattedTextControl(self._get_styled_job_titles_list), width=70
         )
@@ -60,6 +60,8 @@ class MainView:
         self.new_event_float = self.new_event_window.float
 
         self.container = self._create_container()
+
+        self.refresh()
 
     def _create_container(self):
         return FloatContainer(
@@ -140,15 +142,23 @@ class MainView:
     
 
     def select_prev(self):
+        if not self.state.jobs_visible:
+            return
         self.selected_index = (self.selected_index - 1) % len(
             self.state.jobs_visible
         )
         self.state.selected_job_id = self.state.jobs_visible[self.selected_index].id
     def select_next(self):
+        if not self.state.jobs_visible:
+            return
         self.selected_index = (self.selected_index + 1) % len(
             self.state.jobs_visible
         )
         self.state.selected_job_id = self.state.jobs_visible[self.selected_index].id
+
+    def refresh(self):
+        if self.state.jobs_visible:
+            self.state.selected_job_id = self.state.jobs_visible[self.selected_index].id
 
 class NewJobView:
     def __init__(self, state : State) -> None:
