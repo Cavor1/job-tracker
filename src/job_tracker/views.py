@@ -133,12 +133,14 @@ class MainView:
             return "Empty job application list"
         selected_job = self.state.jobs_visible[self.selected_index]
         title = selected_job.title + "\n"
+        url : str = selected_job.link + "\n"
+        company : str = selected_job.company + "\n"
         keywords = "".join([f"{k.keyword}\n" for k in selected_job.keywords])
         recent_events = sorted(selected_job.job_events,key=lambda je: je.date,reverse=True)
         recent_events_text = "".join([f"{re.event_type.name} {re.date.replace(tzinfo=UTC).astimezone()}\n" for re in recent_events])
         description = selected_job.description or ""
 
-        return title + "\nkeywords\n"+ keywords+ "\nevents\n" + recent_events_text + "\ndescription\n" + description
+        return title + url + company + "\nkeywords\n"+ keywords+ "\nevents\n" + recent_events_text + "\ndescription\n" + description
     
 
     def select_prev(self):
