@@ -1,9 +1,8 @@
-from os import waitstatus_to_exitcode
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.key_binding import KeyBindings
 
 from job_tracker.controller import new_job, new_job_event, del_job
-from job_tracker.logger import log
+from job_tracker.database import SessionLocal
 from job_tracker.models import JobEvent
 from job_tracker.state import State, View
 from job_tracker.views import TUI
@@ -45,7 +44,8 @@ def create_keybindings(state: State, tui: TUI) -> KeyBindings:
     @kb.add("delete",filter=is_main_view)
     def _(event):
         if state.selected_job_id:
-            del_job(state.selected_job_id)
+            with SessionLocal.begin() as session:
+                del_job(session, state.selected_job_id)
             tui.refresh()
 
     #NEW JOB KEYBINDINGS
@@ -64,12 +64,9 @@ def create_keybindings(state: State, tui: TUI) -> KeyBindings:
 
     @kb.add("enter", filter=is_new_job_view)
     def _(event):
-        try:
-            args = tui.new_job_view.parse_form()
-            new_job(title=args.get("title"),link=args.get("link"),keywords=args.get("keywords"),company=args.get("company"),description=args.get("description"))
-        except Exception as e:
-            log(f"ERROR: {e}")
-            return
+        args = tui.new_job_view.parse_form()
+        with SessionLocal.begin() as session:
+            new_job(session, **args)
 
         tui.main_view.new_event_window.event_type_text_area.buffer.cancel_completion()
 
@@ -89,11 +86,9 @@ def create_keybindings(state: State, tui: TUI) -> KeyBindings:
 
     @kb.add("enter", filter=is_new_event_view)
     def _(event):
-        try: 
-            job_event : JobEvent = tui.main_view.new_event_window.parse_form()
-        except Exception as e:
-            raise Exception(e)
-        new_job_event(job_event)
+        job_event: JobEvent = tui.main_view.new_event_window.parse_form()
+        with SessionLocal.begin() as session:
+            new_job_event(session, job_event)
 
         tui.main_view.new_event_window.event_type_text_area.buffer.cancel_completion()
         tui.refresh()

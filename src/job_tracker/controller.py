@@ -1,36 +1,37 @@
-from sqlalchemy import select
-from sqlalchemy.orm import Session, selectinload, sessionmaker
+"""Application operations using caller-owned sessions and transactions."""
 
-from job_tracker.database import SessionLocal
+from collections.abc import Iterable
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session, selectinload
+
 from job_tracker.logger import log
 from job_tracker.models import Job, JobEvent, JobEventType, Keyword
 
 
-def get_jobs(
-    session_factory: sessionmaker[Session] = SessionLocal,
-) -> list[Job]:
-    with session_factory() as session:
-        return list(
-            session.execute(
-                select(Job).options(
-                    selectinload(Job.job_events).selectinload(JobEvent.event_type),
-                    selectinload(Job.keywords)
-                )
+def get_jobs(session: Session) -> list[Job]:
+    return list(
+        session.scalars(
+            select(Job).options(
+                selectinload(Job.job_events).selectinload(JobEvent.event_type),
+                selectinload(Job.keywords),
             )
-            .scalars()
-            .all()
-        )
+        ).all()
+    )
 
 
-def get_event_types(
-    session_factory: sessionmaker[Session] = SessionLocal,
-) -> list[JobEventType]:
-    with session_factory() as session:
-        return list(session.execute(select(JobEventType)).scalars().all())
+def get_event_types(session: Session) -> list[JobEventType]:
+    return list(session.scalars(select(JobEventType)).all())
 
 
-def new_job(title : str, link : str, keywords : list[str], company : str | None = None, description : str | None = None, session_factory : sessionmaker[Session] = SessionLocal):
-    
+def new_job(
+    session: Session,
+    title: str,
+    link: str,
+    keywords: Iterable[str],
+    company: str | None = None,
+    description: str | None = None,
+) -> int:
     error = ""
 
     if not title.strip():
@@ -47,7 +48,7 @@ def new_job(title : str, link : str, keywords : list[str], company : str | None 
     if error:
         raise ValueError(error)
 
-    db_keywords = get_keywords()
+    db_keywords = get_keywords(session)
     db_keywords_by_name = {kw.keyword: kw for kw in db_keywords}
     job_keywords: list[Keyword] = []
 
@@ -63,63 +64,38 @@ def new_job(title : str, link : str, keywords : list[str], company : str | None 
     
     company = (company or "").strip() or None #whitespaces turn to None
 
+    event_type = get_cv_sent_event_type(session)
     job = Job(title=title.strip(), link=link.strip(), company=company, description=description, keywords=job_keywords)
     
-    job.job_events.append(JobEvent(event_type=get_cv_sent_event_type()))
-    with session_factory() as session:
-        session.add(job)
-        session.commit()
+    job.job_events.append(JobEvent(event_type=event_type))
+    session.add(job)
+    session.flush()
+    return job.id
 
 
-
-def new_job_event(
-    job_event: JobEvent, session_factory: sessionmaker[Session] = SessionLocal
-):
-    with session_factory() as session:
-        session.add(job_event)
-        session.commit()
-
-def del_job(
-    job_id: int,
-    session_factory: sessionmaker[Session] = SessionLocal,
-) -> bool:
-    with session_factory() as session:
-        job = session.get(Job, job_id)
-
-        if job is None:
-            return False
-
-        session.delete(job)
-        session.commit()
-
-        return True
+def new_job_event(session: Session, job_event: JobEvent) -> None:
+    session.add(job_event)
 
 
-def get_cv_sent_event_type(
-    session_factory: sessionmaker[Session] = SessionLocal,
-) -> JobEventType:
+def del_job(session: Session, job_id: int) -> bool:
+    job = session.get(Job, job_id)
+    if job is None:
+        return False
+    session.delete(job)
+    return True
+
+
+def get_cv_sent_event_type(session: Session) -> JobEventType:
     log("getting event type")
-    cv_sent_type = None
-    with session_factory() as session:
-        cv_sent_type = session.scalar(
-            select(JobEventType).where(JobEventType.name == "cv_sent")
-        )
-        log("got event type")
-
+    cv_sent_type = session.scalar(
+        select(JobEventType).where(JobEventType.name == "cv_sent")
+    )
     if cv_sent_type is None:
         log("creating new one")
         cv_sent_type = JobEventType("cv_sent")
-        with session_factory() as session:
-            session.add(cv_sent_type)
-            session.commit()
-
+        session.add(cv_sent_type)
     return cv_sent_type
 
 
-def get_keywords(
-    session_factory: sessionmaker[Session] = SessionLocal,
-) -> list[Keyword]:
-    keywords = []
-    with session_factory() as session:
-        keywords = list(session.execute(select(Keyword)).scalars().all())
-    return keywords
+def get_keywords(session: Session) -> list[Keyword]:
+    return list(session.scalars(select(Keyword)).all())

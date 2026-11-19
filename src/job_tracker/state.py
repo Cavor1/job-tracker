@@ -7,6 +7,7 @@ from job_tracker.controller import (
     get_jobs,
     get_keywords,
 )
+from job_tracker.database import SessionLocal
 from job_tracker.logger import log
 from job_tracker.models import Job, JobEventType, Keyword
 from job_tracker.utils import get_next_or_last_event
@@ -30,13 +31,15 @@ class State:
 
 
 
-def load_state(state : State | None = None): 
-    state = state or State(get_cv_sent_event_type())
-
-    state.jobs = get_jobs()
-    state.jobs_visible  = sorted(state.jobs, reverse=True,key=lambda j: get_next_or_last_event(j).date)
-    state.event_types = get_event_types()
-    log(str([et.name for et in state.event_types]))
-    state.keywords = get_keywords()
+def load_state(state: State | None = None) -> State:
+    with SessionLocal.begin() as session:
+        state = state or State(get_cv_sent_event_type(session))
+        state.jobs = get_jobs(session)
+        state.jobs_visible = sorted(
+            state.jobs, reverse=True, key=lambda job: get_next_or_last_event(job).date
+        )
+        state.event_types = get_event_types(session)
+        log(str([et.name for et in state.event_types]))
+        state.keywords = get_keywords(session)
 
     return state
