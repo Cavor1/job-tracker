@@ -134,7 +134,7 @@ class MainView:
         selected_job = self.state.jobs_visible[self.selected_index]
         title = selected_job.title + "\n"
         url : str = selected_job.link + "\n"
-        company : str = selected_job.company + "\n"
+        company : str = selected_job.company or "" + "\n"
         keywords = "".join([f"{k.keyword}\n" for k in selected_job.keywords])
         recent_events = sorted(selected_job.job_events,key=lambda je: je.date,reverse=True)
         recent_events_text = "".join([f"{re.event_type.name} {re.date.replace(tzinfo=UTC).astimezone()}\n" for re in recent_events])
@@ -238,36 +238,21 @@ class NewJobView:
             error += "no keywords"
         return error
 
-    def parse_form(self) -> Job:
+    def parse_form(self) -> dict:
 
         error = self.validate_form()
         if error:
             raise ValueError(error)
 
         form_keywords = {kw.strip().lower() for kw in self.keywords.text.split()}
-        db_keywords = self.state.keywords
-        db_keywords_by_name = {kw.keyword: kw for kw in db_keywords}
-        job_keywords: list[Keyword] = []
 
-        for keyword_text in form_keywords:
-            if keyword_text in db_keywords_by_name:
-                keyword = db_keywords_by_name[keyword_text]
-
-            else:
-                keyword = Keyword(keyword=keyword_text)
-                db_keywords_by_name[keyword_text] = keyword
-
-            job_keywords.append(keyword)
-
-        job = Job(
-            title=self.title.text.strip(),
-            link=self.link.text.strip(),
-            company=self.company.text.strip() or None,
-            keywords=job_keywords,
-            description=self.description.text.strip() or None,
-        )
-        job.job_events.append(JobEvent(event_type=self.state.cv_sent_type))
-        return job
+        return {
+            "title":self.title.text.strip(),
+            "link":self.link.text.strip(),
+            "company":self.company.text.strip() or None,
+            "keywords":form_keywords,
+            "description":self.description.text.strip() or None,
+        }
 
 
 class NewEventWindow:

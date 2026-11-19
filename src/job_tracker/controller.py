@@ -29,10 +29,47 @@ def get_event_types(
         return list(session.execute(select(JobEventType)).scalars().all())
 
 
-def new_job(job: Job, session_factory: sessionmaker[Session] = SessionLocal):
+def new_job(title : str, link : str, keywords : list[str], company : str | None = None, description : str | None = None, session_factory : sessionmaker[Session] = SessionLocal):
+    
+    error = ""
+
+    if not title.strip():
+        error += "Title cant be empty or only whitespace.\n"
+
+    if not link.strip():
+        error += "link cant be empty or only whitespace.\n"
+
+    keywords_set: set[str] = {kw.strip().lower() for kw in keywords if kw.strip()}
+
+    if not keywords_set:
+        error += "keywords cant be empty or only whitespace.\n"
+
+    if error:
+        raise ValueError(error)
+
+    db_keywords = get_keywords()
+    db_keywords_by_name = {kw.keyword: kw for kw in db_keywords}
+    job_keywords: list[Keyword] = []
+
+    for keyword_text in keywords_set:
+        if keyword_text in db_keywords_by_name:
+            keyword = db_keywords_by_name[keyword_text]
+
+        else:
+            keyword = Keyword(keyword=keyword_text)
+            db_keywords_by_name[keyword_text] = keyword
+
+        job_keywords.append(keyword)
+    
+    company = (company or "").strip() or None #whitespaces turn to None
+
+    job = Job(title=title.strip(), link=link.strip(), company=company, description=description, keywords=job_keywords)
+    
+    job.job_events.append(JobEvent(event_type=get_cv_sent_event_type()))
     with session_factory() as session:
         session.add(job)
         session.commit()
+
 
 
 def new_job_event(

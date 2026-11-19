@@ -65,14 +65,15 @@ def create_keybindings(state: State, tui: TUI) -> KeyBindings:
     @kb.add("enter", filter=is_new_job_view)
     def _(event):
         try:
-            job = tui.new_job_view.parse_form()
+            args = tui.new_job_view.parse_form()
+            new_job(title=args.get("title"),link=args.get("link"),keywords=args.get("keywords"),company=args.get("company"),description=args.get("description"))
         except Exception as e:
             log(f"ERROR: {e}")
             return
-        # log(f"{job}")
+
         tui.main_view.new_event_window.event_type_text_area.buffer.cancel_completion()
 
-        new_job(job)
+
         tui.refresh()
         tui.new_job_view.refresh()
         event.app.invalidate()
